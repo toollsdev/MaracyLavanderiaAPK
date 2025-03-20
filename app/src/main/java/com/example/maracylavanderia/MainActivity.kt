@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Verifica atualização assim que o app inicia
-        CheckUpdateTask().execute("https://raw.githubusercontent.com/seu-usuario/seu-repo/main/update.json")
+        CheckUpdateTask().execute("https://raw.githubusercontent.com/toollsdev/MaracyLavanderiaAPK/refs/heads/master/update.json")
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
