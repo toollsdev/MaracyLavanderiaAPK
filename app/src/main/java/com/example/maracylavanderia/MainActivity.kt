@@ -23,29 +23,40 @@ import java.io.File
 import java.net.URL
 
 class MainActivity : AppCompatActivity() {
-    private val currentVersion = "1.0.1" // Obtém a versão dinamicamente
+    private val currentVersion = "1.0.1"
     private lateinit var apkFile: File
 
     private lateinit var webview: WebView
     private lateinit var loadingText: TextView
+    private val handler = Handler(Looper.getMainLooper()) // Handler para o timeout
+    private var loadTimeout = false // Flag para verificar se o timeout ocorreu
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Inicializa componentes
         webview = findViewById(R.id.webview)
         loadingText = findViewById(R.id.loadingText)
 
         webview.settings.javaScriptEnabled = true
 
-        // Configura o WebViewClient
+        // Inicia o timeout de 10 segundos
+        handler.postDelayed({
+            if (webview.progress < 100) { // Se a página ainda não carregou completamente
+                loadTimeout = true
+                loadingText.text = "Erro: Tempo limite atingido!"
+                Toast.makeText(this, "Erro: Tempo limite atingido! Verifique sua conexão e tente novamente", Toast.LENGTH_LONG).show()
+            }
+        }, 10000) // 10 segundos
+
         webview.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                // Esconde a mensagem de carregamento e mostra a WebView
-                loadingText.visibility = View.GONE
-                webview.visibility = View.VISIBLE
+                if (!loadTimeout) { // Somente exibe se não tiver ocorrido timeout
+                    handler.removeCallbacksAndMessages(null) // Cancela o timeout
+                    loadingText.visibility = View.GONE
+                    webview.visibility = View.VISIBLE
+                }
             }
 
             override fun onReceivedError(
@@ -54,27 +65,18 @@ class MainActivity : AppCompatActivity() {
                 error: WebResourceError?
             ) {
                 super.onReceivedError(view, request, error)
-
-                // Mostra um Toast com erro
-                Toast.makeText(
-                    this@MainActivity,
-                    "Erro ao carregar a página. Verifique sua conexão!",
-                    Toast.LENGTH_LONG
-                ).show()
-
-                // Atualiza a mensagem de erro
-                loadingText.text = "Erro ao carregar o sistema. Verifique a conexão."
+                loadingText.text = "Erro ao carregar a página!"
+                Toast.makeText(this@MainActivity, "Verifique sua conexão e tente novamente.", Toast.LENGTH_LONG).show()
             }
         }
 
-        // Carrega a página apenas se não houver estado salvo
         if (savedInstanceState == null) {
             webview.loadUrl("http://10.0.0.48:8080")
+            //webview.loadUrl("https://google.com.br")
         } else {
             webview.restoreState(savedInstanceState)
         }
 
-        // Verifica atualização assim que o app inicia
         CheckUpdateTask().execute("https://devadrian.shop/maracy/update.json")
     }
 
