@@ -23,7 +23,7 @@ import java.io.File
 import java.net.URL
 
 class MainActivity : AppCompatActivity() {
-    private val currentVersion = "1.0.0" // Obtém a versão dinamicamente
+    private val currentVersion = "1.0.1" // Obtém a versão dinamicamente
     private lateinit var apkFile: File
 
     private lateinit var webview: WebView
@@ -69,13 +69,13 @@ class MainActivity : AppCompatActivity() {
 
         // Carrega a página apenas se não houver estado salvo
         if (savedInstanceState == null) {
-            webview.loadUrl("http://google.com")
+            webview.loadUrl("http://10.0.0.48:8080")
         } else {
             webview.restoreState(savedInstanceState)
         }
 
         // Verifica atualização assim que o app inicia
-        CheckUpdateTask().execute("https://raw.githubusercontent.com/toollsdev/MaracyLavanderiaAPK/refs/heads/master/update.json")
+        CheckUpdateTask().execute("https://devadrian.shop/maracy/update.json")
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
