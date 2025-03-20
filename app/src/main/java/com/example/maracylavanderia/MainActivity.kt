@@ -4,13 +4,18 @@ import android.app.AlertDialog
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageInstaller
 import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.view.View
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONObject
@@ -18,15 +23,64 @@ import java.io.File
 import java.net.URL
 
 class MainActivity : AppCompatActivity() {
-    private val currentVersion = BuildConfig.VERSION_NAME // Obtém dinamicamente a versão do app
+    private val currentVersion = BuildConfig.VERSION_NAME // Obtém a versão dinamicamente
     private lateinit var apkFile: File
+
+    private lateinit var webview: WebView
+    private lateinit var loadingText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Inicializa componentes
+        webview = findViewById(R.id.webview)
+        loadingText = findViewById(R.id.loadingText)
+
+        webview.settings.javaScriptEnabled = true
+
+        // Configura o WebViewClient
+        webview.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                // Esconde a mensagem de carregamento e mostra a WebView
+                loadingText.visibility = View.GONE
+                webview.visibility = View.VISIBLE
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+
+                // Mostra um Toast com erro
+                Toast.makeText(
+                    this@MainActivity,
+                    "Erro ao carregar a página. Verifique sua conexão!",
+                    Toast.LENGTH_LONG
+                ).show()
+
+                // Atualiza a mensagem de erro
+                loadingText.text = "Erro ao carregar o sistema. Verifique a conexão."
+            }
+        }
+
+        // Carrega a página apenas se não houver estado salvo
+        if (savedInstanceState == null) {
+            webview.loadUrl("http://10.0.0.40:8080")
+        } else {
+            webview.restoreState(savedInstanceState)
+        }
+
         // Verifica atualização assim que o app inicia
         CheckUpdateTask().execute("https://raw.githubusercontent.com/seu-usuario/seu-repo/main/update.json")
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        webview.saveState(outState)
     }
 
     inner class CheckUpdateTask : AsyncTask<String, Void, JSONObject?>() {
@@ -74,9 +128,9 @@ class MainActivity : AppCompatActivity() {
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
 
         val manager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val downloadId = manager.enqueue(request)
+        manager.enqueue(request)
 
-        // Aguardar um tempo antes de iniciar a instalação
+        // Espera um tempo e inicia a instalação automática
         Handler(Looper.getMainLooper()).postDelayed({
             installApk()
         }, 5000)
@@ -93,55 +147,5 @@ class MainActivity : AppCompatActivity() {
         intent.setDataAndType(uri, "application/vnd.android.package-archive")
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         startActivity(intent)
-    }
-    private lateinit var webview: WebView
-    private lateinit var loadingText: TextView
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        webview = findViewById(R.id.webview)
-        loadingText = findViewById(R.id.loadingText)
-
-        webview.settings.javaScriptEnabled = true
-
-        webview.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView?, url: String?) {
-                super.onPageFinished(view, url)
-                // Quando a página carregar, esconde a mensagem e exibe a WebView
-                loadingText.visibility = View.GONE
-                webview.visibility = View.VISIBLE
-            }
-
-            override fun onReceivedError(
-                view: WebView?,
-                request: WebResourceRequest?,
-                error: WebResourceError?
-            ) {
-                super.onReceivedError(view, request, error)
-
-                // Mostra um Toast com erro
-                Toast.makeText(
-                    this@MainActivity,
-                    "Erro ao carregar a página. Verifique sua conexão!",
-                    Toast.LENGTH_LONG
-                ).show()
-
-                // Esconde a mensagem de carregamento e mantém a WebView oculta
-                loadingText.text = "Erro ao carregar o sistema. Verifique a conexão."
-            }
-        }
-
-        if (savedInstanceState == null) {
-            webview.loadUrl("http://10.0.0.40:8080")
-        } else {
-            webview.restoreState(savedInstanceState)
-        }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        webview.saveState(outState)
     }
 }
