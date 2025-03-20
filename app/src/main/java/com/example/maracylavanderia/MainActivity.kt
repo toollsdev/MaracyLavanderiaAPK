@@ -23,7 +23,7 @@ import java.io.File
 import java.net.URL
 
 class MainActivity : AppCompatActivity() {
-    private val currentVersion = "1.0.0" // Obtém a versão dinamicamente
+    private val currentVersion = "1.0.1" // Obtém a versão dinamicamente
     private lateinit var apkFile: File
 
     private lateinit var webview: WebView
